@@ -1,0 +1,11 @@
+How to Run
+
+    Backend:
+        Restore and build solution.
+        Run dotnet run in EmployeePairAnalyzer.Api (default port 5001).
+        CORS is enabled for local dev.
+
+    Frontend:
+        Run npm install then ng serve in employee-pair-analyzer-ui.
+        Open http://localhost:4200
+        Upload the CSV file, see results in the table.
