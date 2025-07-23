@@ -7,7 +7,7 @@ public class EmployeePairService : IEmployeePairService
     public List<EmployeePairResult> CalculatePairs(IEnumerable<EmployeeProjectAssignment> assignments)
     {
         var pairDays = new Dictionary<(int, int), int>();
-        var pairProjects = new Dictionary<(int, int), List<int>>();
+        var pairProjectDays = new Dictionary<(int, int, int), int>(); // (Emp1, Emp2, ProjectId) -> days
 
         var grouped = assignments.GroupBy(a => a.ProjectID);
         foreach (var projectGroup in grouped)
@@ -25,13 +25,15 @@ public class EmployeePairService : IEmployeePairService
                     if (daysWorked > 0)
                     {
                         var key = (Math.Min(e1.EmpID, e2.EmpID), Math.Max(e1.EmpID, e2.EmpID));
+                        var projectKey = (key.Item1, key.Item2, projectGroup.Key);
+
                         if (!pairDays.ContainsKey(key))
-                        {
                             pairDays[key] = 0;
-                            pairProjects[key] = new List<int>();
-                        }
                         pairDays[key] += (int)daysWorked;
-                        pairProjects[key].Add(projectGroup.Key);
+
+                        if (!pairProjectDays.ContainsKey(projectKey))
+                            pairProjectDays[projectKey] = 0;
+                        pairProjectDays[projectKey] += (int)daysWorked;
                     }
                 }
             }
@@ -45,23 +47,26 @@ public class EmployeePairService : IEmployeePairService
 
         // Return all project details for the max pair
         var results = new List<EmployeePairResult>();
-        foreach (var projectId in pairProjects[maxPair.Key])
+        foreach (var kvp in pairProjectDays)
         {
-            results.Add(new EmployeePairResult
+            if (kvp.Key.Item1 == maxPair.Key.Item1 && kvp.Key.Item2 == maxPair.Key.Item2)
             {
-                EmployeeId1 = maxPair.Key.Item1,
-                EmployeeId2 = maxPair.Key.Item2,
-                ProjectId = projectId,
-                DaysWorked = 0 
-            });
+                results.Add(new EmployeePairResult
+                {
+                    EmployeeId1 = kvp.Key.Item1,
+                    EmployeeId2 = kvp.Key.Item2,
+                    ProjectId = kvp.Key.Item3,
+                    DaysWorked = kvp.Value
+                });
+            }
         }
 
-        
+        // Optionally, add a summary row:
         results.Add(new EmployeePairResult
         {
             EmployeeId1 = maxPair.Key.Item1,
             EmployeeId2 = maxPair.Key.Item2,
-            ProjectId = 0,
+            ProjectId = 0, // 0 means "across all projects"
             DaysWorked = maxPair.Value
         });
 
